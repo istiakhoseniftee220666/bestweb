@@ -467,8 +467,8 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--b
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, set, push, onValue, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, set, push, onValue, remove, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 /* =========================================================
    🔧 ফায়ারবেস কনফিগ — index.html এর সাথে একই কনফিগ বসাবেন
@@ -486,6 +486,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
+setPersistence(auth, browserLocalPersistence).catch(() => {});
 
 // 🔑 আপনার ImgBB API Key (https://api.imgbb.com থেকে ফ্রি পাবেন)
 const IMGBB_API_KEY = "e36d6e260487f152990335f064159017";
@@ -895,7 +896,7 @@ function renderOrdersTable() {
       const id = e.target.dataset.id;
       const newStatus = e.target.value;
       try {
-        await set(ref(db, 'orders/' + id + '/status'), newStatus);
+        await updateOrderStatus(id, newStatus);
         showToast('স্ট্যাটাস আপডেট হয়েছে!', 'success');
       } catch (err) { showToast('এরর: ' + err.message, 'error'); }
     });
@@ -904,7 +905,7 @@ function renderOrdersTable() {
   document.querySelectorAll('.quick-confirm-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       try {
-        await set(ref(db, 'orders/' + btn.dataset.id + '/status'), 'confirmed');
+        await updateOrderStatus(btn.dataset.id, 'confirmed');
         showToast('অর্ডার কনফার্ম করা হয়েছে! ✅', 'success');
       } catch (err) { showToast('এরর: ' + err.message, 'error'); }
     });
@@ -926,13 +927,47 @@ function updateOrderStats() {
   document.getElementById('statRevenue').textContent = '৳' + monthlyRevenue;
 }
 
+// অর্ডারের স্ট্যাটাস 'orders/' এবং গ্রাহকের নিজস্ব 'userOrders/{uid}/' — দুই জায়গাতেই একসাথে আপডেট করে,
+// যাতে গ্রাহক "আমার অর্ডার" এ সাথে সাথে (রিফ্রেশ ছাড়াই) সঠিক স্ট্যাটাস দেখতে পায়।
+async function updateOrderStatus(id, newStatus) {
+  const order = allOrders[id];
+  const updates = {};
+  updates['orders/' + id + '/status'] = newStatus;
+  updates['orders/' + id + '/cancelledAt'] = newStatus === 'cancelled' ? Date.now() : null;
+  if (order && order.uid) {
+    updates['userOrders/' + order.uid + '/' + id + '/status'] = newStatus;
+    updates['userOrders/' + order.uid + '/' + id + '/cancelledAt'] = newStatus === 'cancelled' ? Date.now() : null;
+  }
+  await update(ref(db), updates);
+}
+
+// বাতিল (cancelled) করা অর্ডার, বাতিল হওয়ার ১ দিন পর স্বয়ংক্রিয়ভাবে মুছে ফেলে।
+// নোট: এটি ব্রাউজার-ভিত্তিক চেক (কোনো সার্ভার/ক্লাউড ফাংশন নেই), তাই এডমিন প্যানেল
+// খোলা থাকা অবস্থায় (পেজ লোড হওয়ার সময় এবং প্রতি ১০ মিনিট পরপর) এই চেকটি চলে।
+const ORDER_EXPIRY_MS = 24 * 60 * 60 * 1000; // ১ দিন
+async function cleanupExpiredCancelledOrders() {
+  const now = Date.now();
+  const updates = {};
+  Object.entries(allOrders).forEach(([id, order]) => {
+    if (order.status === 'cancelled' && order.cancelledAt && (now - order.cancelledAt) > ORDER_EXPIRY_MS) {
+      updates['orders/' + id] = null;
+      if (order.uid) updates['userOrders/' + order.uid + '/' + id] = null;
+    }
+  });
+  if (Object.keys(updates).length > 0) {
+    try { await update(ref(db), updates); } catch (err) { console.error('Cleanup failed:', err); }
+  }
+}
+
 onValue(ref(db, 'orders'), (snap) => {
   allOrders = snap.exists() ? snap.val() : {};
   renderOrdersTable();
+  cleanupExpiredCancelledOrders();
 }, (err) => {
   console.error('Orders load error:', err);
   adminOrdersTable.innerHTML = `<tr><td colspan="6">${PERMISSION_ERROR_HTML}</td></tr>`;
 });
+setInterval(cleanupExpiredCancelledOrders, 10 * 60 * 1000);
 orderStatusFilter.addEventListener('change', renderOrdersTable);
 
 /* ===== Coupons Tab ===== */
