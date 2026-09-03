@@ -1321,6 +1321,7 @@ ${discountLine}💰 *সর্বমোট মূল্য:* ৳${finalAmount}
   set(newOrderRef, orderRecord).catch(err => console.error('Order save failed:', err));
   set(ref(db, 'userOrders/' + currentUser.uid + '/' + newOrderRef.key), orderRecord).catch(err => console.error('User order mirror failed:', err));
 
+
   fireConfetti();
   showToast('WhatsApp-এ অর্ডার তৈরি হচ্ছে... 🚀', 'success');
 
@@ -1346,6 +1347,10 @@ document.getElementById('waOrderForm').addEventListener('submit', e => {
 </script>
 </body>
 </html>
+
+kichu poriborton lagbe. order somuho theke batil kora order jeno automatic 1 din por bad hoye jay. ar
+admin, order er athe ja i korche, user sudhu pending i dektase ken jani.
+or ta update hoy na. page refresh korle, ken jani singout hoiya jache
 
 
 
