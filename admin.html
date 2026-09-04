@@ -877,7 +877,7 @@ function renderOrdersTable() {
       <td style="white-space:nowrap; font-size:0.85rem;">${formatOrderTime(order.createdAt)}</td>
       <td><b>${order.customerName || ''}</b><br><small style="color:var(--muted);">${order.phone || ''}</small></td>
       <td style="max-width:220px; font-size:0.85rem;">${itemsList}</td>
-      <td><b>৳${order.total ?? order.subtotal ?? 0}</b>${order.discount ? `<br><small style="color:#10B981;">কুপন: ${order.couponCode}</small>` : ''}</td>
+      <td><b>৳${order.total ?? order.subtotal ?? 0}</b>${order.discount ? `<br><small style="color:#10B981;">কুপন: ${order.couponCode}${order.couponType ? ` (${order.couponType === 'percent' ? order.couponValue + '%' : '৳' + order.couponValue} ছাড়)` : ''}</small>` : ''}</td>
       <td>
         <select class="status-select order-status-select status-${status}" data-id="${id}">
           <option value="pending" ${status === 'pending' ? 'selected' : ''}>🕓 পেন্ডিং</option>
