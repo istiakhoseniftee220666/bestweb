@@ -484,9 +484,12 @@ footer { text-align: center; padding: 34px 20px 10px; color: var(--muted); font-
     </div>
   </div>
 
-  <div class="form-group" style="display:flex; gap:10px; align-items:flex-end;">
+  <div id="couponToggleWrapper" style="margin-bottom:16px;">
+    <button type="button" id="couponToggleBtn" style="padding:10px 18px; border:2px dashed var(--brand); border-radius:12px; background:transparent; color:var(--brand); font-weight:700; cursor:pointer;">🏷️ কুপন কোড আছে?</button>
+  </div>
+  <div class="form-group" id="couponFieldWrapper" style="display:none; gap:10px; align-items:flex-end;">
     <div style="flex:1;">
-      <label>কুপন কোড আছে?</label>
+      <label>কুপন কোড লিখুন</label>
       <input type="text" id="couponInput" placeholder="যেমন: WELCOME10">
     </div>
     <button type="button" id="applyCouponBtn" style="padding:13px 20px; border:none; border-radius:12px; background:var(--ink); color:var(--bg); font-weight:700; cursor:pointer; white-space:nowrap;">অ্যাপ্লাই</button>
@@ -1156,6 +1159,13 @@ document.getElementById('navSearchBtn').addEventListener('click', () => document
 /* ===== Coupon ===== */
 onValue(ref(db, 'coupons'), snap => { window.__allCoupons = snap.exists() ? snap.val() : {}; });
 
+document.getElementById('couponToggleBtn').addEventListener('click', () => {
+  const wrapper = document.getElementById('couponFieldWrapper');
+  const isHidden = wrapper.style.display === 'none' || !wrapper.style.display;
+  wrapper.style.display = isHidden ? 'flex' : 'none';
+  if (isHidden) document.getElementById('couponInput').focus();
+});
+
 document.getElementById('applyCouponBtn').addEventListener('click', () => {
   const code = document.getElementById('couponInput').value.trim().toUpperCase();
   const msgEl = document.getElementById('couponMsg');
@@ -1293,7 +1303,8 @@ function submitOrderNow() {
 
   const discount = calcDiscount(totalAmount);
   const finalAmount = totalAmount - discount;
-  const discountLine = discount > 0 ? `🏷️ *কুপন (${appliedCoupon.code}):* − ৳${discount}\n` : '';
+  const couponTypeLabel = appliedCoupon ? (appliedCoupon.type === 'percent' ? `${appliedCoupon.value}% ছাড়` : `৳${appliedCoupon.value} ছাড়`) : '';
+  const discountLine = discount > 0 ? `🏷️ *কুপন (${appliedCoupon.code} — ${couponTypeLabel}):* − ৳${discount}\n` : '';
 
   const fullMsg =
 `🛍️ *নতুন অর্ডার (KENDRO)*
@@ -1315,6 +1326,8 @@ ${discountLine}💰 *সর্বমোট মূল্য:* ৳${finalAmount}
     items: cart.map(item => ({ name: item.name, price: item.price, qty: item.qty })),
     subtotal: totalAmount, discount: discount,
     couponCode: appliedCoupon ? appliedCoupon.code : null,
+    couponType: appliedCoupon ? appliedCoupon.type : null,
+    couponValue: appliedCoupon ? appliedCoupon.value : null,
     total: finalAmount, status: 'pending', createdAt: Date.now()
   };
   const newOrderRef = push(ref(db, 'orders'));
@@ -1331,6 +1344,7 @@ ${discountLine}💰 *সর্বমোট মূল্য:* ৳${finalAmount}
   appliedCoupon = null;
   document.getElementById('couponInput').value = '';
   document.getElementById('couponMsg').textContent = '';
+  document.getElementById('couponFieldWrapper').style.display = 'none';
   renderCart();
 }
 
@@ -1348,9 +1362,7 @@ document.getElementById('waOrderForm').addEventListener('submit', e => {
 </body>
 </html>
 
-kichu poriborton lagbe. order somuho theke batil kora order jeno automatic 1 din por bad hoye jay. ar
-admin, order er athe ja i korche, user sudhu pending i dektase ken jani.
-or ta update hoy na. page refresh korle, ken jani singout hoiya jache
+
 
 
 
