@@ -411,6 +411,12 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--b
         <textarea id="productDesc" rows="3" placeholder="ছোট বিবরণ... (কাপড়ের ধরন, সাইজ, কালার ইত্যাদি লিখতে পারেন)"></textarea>
       </div>
 
+      <div class="form-group">
+        <label>ক্যাটাগরি (যেমন: Food, Dress)</label>
+        <input type="text" id="productCategory" list="categoryList" placeholder="যেমন: Food">
+        <datalist id="categoryList"></datalist>
+      </div>
+
       <div style="display:flex; gap:14px;">
         <div class="form-group" style="flex:1;">
           <label>মূল দাম (৳) *</label>
@@ -746,6 +752,8 @@ function updateStats(dataObj) {
 
 onValue(ref(db, 'products'), (snap) => {
   allProducts = snap.exists() ? snap.val() : {};
+  const categories = [...new Set(Object.values(allProducts).map(p => (p.category || '').trim()).filter(c => c))].sort();
+  document.getElementById('categoryList').innerHTML = categories.map(c => `<option value="${c.replace(/"/g, '&quot;')}">`).join('');
   const term = productSearch.value.trim().toLowerCase();
   if (term) {
     const filtered = {};
@@ -776,6 +784,7 @@ productForm.addEventListener('submit', async (e) => {
   const stock = document.getElementById('productStock').value ? Number(document.getElementById('productStock').value) : null;
   const offerPrice = document.getElementById('productOfferPrice').value ? Number(document.getElementById('productOfferPrice').value) : null;
   const offerTitle = document.getElementById('productOfferTitle').value.trim();
+  const category = document.getElementById('productCategory').value.trim();
   const disabled = document.getElementById('productDisable').checked;
 
   submitBtn.disabled = true;
@@ -792,7 +801,7 @@ productForm.addEventListener('submit', async (e) => {
     }
 
     const productData = {
-      name, description, price,
+      name, description, price, category: category || null,
       stock: stock, offerPrice: offerPrice || null, offerTitle: offerTitle || null,
       image: finalImageUrl || null, disabled: disabled || false
     };
@@ -825,6 +834,7 @@ async function loadProductForEdit(id) {
   document.getElementById('editProductId').value = id;
   document.getElementById('productName').value = p.name || '';
   document.getElementById('productDesc').value = p.description || '';
+  document.getElementById('productCategory').value = p.category || '';
   document.getElementById('productPrice').value = p.price || '';
   document.getElementById('productStock').value = (p.stock === undefined || p.stock === null) ? '' : p.stock;
   document.getElementById('productOfferPrice').value = p.offerPrice || '';
