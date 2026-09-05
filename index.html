@@ -61,6 +61,13 @@ h1, h2, h3, .display { font-family: 'Tiro Bangla', 'Hind Siliguri', serif; }
   text-align: center; padding: 7px 12px; letter-spacing: .2px;
 }
 
+#couponBanner {
+  background: linear-gradient(90deg, #F59E0B, #D97706); color: #fff; font-size: .85rem; font-weight: 700;
+  text-align: center; padding: 9px 12px; letter-spacing: .2px; display: flex; align-items: center; justify-content: center;
+  gap: 8px; flex-wrap: wrap;
+}
+#couponBanner b { text-decoration: underline; text-underline-offset: 3px; }
+
 /* ===== Navbar ===== */
 .navbar {
   position: sticky; top: 0; left: 0; right: 0; background: var(--navbar-bg);
@@ -236,6 +243,10 @@ h1, h2, h3, .display { font-family: 'Tiro Bangla', 'Hind Siliguri', serif; }
 
 /* ===== Section Title ===== */
 .section-title-wrap { max-width: 1240px; margin: 44px auto 22px; padding: 0 6%; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.category-chip-row { max-width: 1240px; margin: 0 auto 22px; padding: 0 6%; display: flex; gap: 10px; flex-wrap: wrap; }
+.category-chip { padding: 8px 18px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--card); color: var(--ink); font-size: .88rem; font-weight: 600; cursor: pointer; transition: var(--transition); white-space: nowrap; }
+.category-chip:hover { border-color: var(--brand); color: var(--brand); }
+.category-chip.active { background: var(--brand); border-color: var(--brand); color: #fff; }
 .section-title { font-size: 1.7rem; font-weight: 700; position: relative; padding-left: 16px; }
 .section-title::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 5px; background: var(--accent); border-radius: 4px; }
 .section-sub { color: var(--muted); font-size: .88rem; }
@@ -390,7 +401,8 @@ footer { text-align: center; padding: 34px 20px 10px; color: var(--muted); font-
 .secret-admin-btn:hover { color: var(--brand); }
 
 @media (max-width: 780px) {
-  .nav-search-wrap { display: none; }
+  .navbar { flex-wrap: wrap; }
+  .nav-search-wrap { display: block; order: 3; flex: 1 1 100%; max-width: none; margin-top: 10px; }
   .trust-strip { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 600px) {
@@ -408,6 +420,7 @@ footer { text-align: center; padding: 34px 20px 10px; color: var(--muted); font-
 <body>
 
 <div class="utility-bar">🚚 সারাদেশে হোম ডেলিভারি &nbsp;•&nbsp; 💳 ক্যাশ অন ডেলিভারি সুবিধা</div>
+<div id="couponBanner" style="display:none;"></div>
 
 <nav class="navbar">
   <div class="logo-section">
@@ -460,6 +473,8 @@ footer { text-align: center; padding: 34px 20px 10px; color: var(--muted); font-
   <h2 class="section-title">আমাদের পণ্যসমূহ</h2>
   <span class="section-sub" id="productCountLabel"></span>
 </div>
+
+<div class="category-chip-row" id="categoryChipRow" style="display:none;"></div>
 
 <!-- Skeleton Loading -->
 <div class="skeleton-grid" id="skeletonGrid">
@@ -651,6 +666,7 @@ let ownerWhatsApp = "8801700000000";
 let cart = [];
 let allProductsData = {};
 let searchTerm = '';
+let categoryFilter = '';
 let appliedCoupon = null;
 let currentUser = null;
 let pendingAction = null;
@@ -1048,6 +1064,7 @@ function renderProducts() {
   const entries = Object.entries(allProductsData).filter(([id, p]) => {
     if (p.disabled === true) return false;
     if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (categoryFilter && p.category !== categoryFilter) return false;
     return true;
   });
 
@@ -1136,9 +1153,26 @@ window.closeProductModal = () => document.getElementById('productDetailModal').c
 document.getElementById('closeProductDetailModal').addEventListener('click', closeProductModal);
 document.getElementById('productDetailModal').addEventListener('click', e => { if (e.target.id === 'productDetailModal') closeProductModal(); });
 
+function renderCategoryChips() {
+  const chipRow = document.getElementById('categoryChipRow');
+  const categories = [...new Set(Object.values(allProductsData).map(p => (p.category || '').trim()).filter(c => c))].sort();
+  if (categories.length === 0) { chipRow.style.display = 'none'; chipRow.innerHTML = ''; return; }
+  chipRow.style.display = 'flex';
+  chipRow.innerHTML = `<button class="category-chip ${categoryFilter === '' ? 'active' : ''}" data-cat="">সব</button>` +
+    categories.map(c => `<button class="category-chip ${categoryFilter === c ? 'active' : ''}" data-cat="${c.replace(/"/g, '&quot;')}">${c}</button>`).join('');
+  chipRow.querySelectorAll('.category-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      categoryFilter = btn.dataset.cat;
+      renderCategoryChips();
+      renderProducts();
+    });
+  });
+}
+
 onValue(ref(db, 'products'), snap => {
   document.getElementById('skeletonGrid').style.display = 'none';
   allProductsData = snap.exists() ? snap.val() : {};
+  renderCategoryChips();
   if (Object.keys(allProductsData).length === 0) {
     document.getElementById('productsGrid').style.display = 'grid';
     document.getElementById('productsGrid').innerHTML = '<p style="text-align:center;grid-column:1/-1;padding:40px;color:var(--muted);font-size:1.05rem;">বর্তমানে কোনো পণ্য অ্যাভেইলেবল নেই। এডমিন প্যানেল থেকে পণ্য যুক্ত করুন! 🛍️</p>';
@@ -1157,7 +1191,22 @@ document.getElementById('navSearchInput').addEventListener('input', e => runSear
 document.getElementById('navSearchBtn').addEventListener('click', () => document.getElementById('navSearchInput').focus());
 
 /* ===== Coupon ===== */
-onValue(ref(db, 'coupons'), snap => { window.__allCoupons = snap.exists() ? snap.val() : {}; });
+onValue(ref(db, 'coupons'), snap => {
+  window.__allCoupons = snap.exists() ? snap.val() : {};
+  renderCouponBanner();
+});
+
+function renderCouponBanner() {
+  const banner = document.getElementById('couponBanner');
+  const coupons = Object.values(window.__allCoupons || {}).filter(c => c.active !== false);
+  if (coupons.length === 0) { banner.style.display = 'none'; banner.innerHTML = ''; return; }
+  const label = (c) => c.type === 'percent' ? `${c.value}% ছাড়` : `৳${c.value} ছাড়`;
+  const text = coupons.length === 1
+    ? `🎁 ১টি কুপন কোড আছে: <b>${coupons[0].code}</b> — ${label(coupons[0])}!`
+    : `🎁 ${coupons.length}টি কুপন কোড আছে: ` + coupons.map(c => `<b>${c.code}</b> (${label(c)})`).join(', ');
+  banner.innerHTML = text;
+  banner.style.display = 'flex';
+}
 
 document.getElementById('couponToggleBtn').addEventListener('click', () => {
   const wrapper = document.getElementById('couponFieldWrapper');
@@ -1362,9 +1411,6 @@ document.getElementById('waOrderForm').addEventListener('submit', e => {
 </body>
 </html>
 
-kichu poriborton lagbe. order somuho theke batil kora order jeno automatic 1 din por bad hoye jay. ar
-admin, order er athe ja i korche, user sudhu pending i dektase ken jani.
-or ta update hoy na. page refresh korle, ken jani singout hoiya jache
 
 
 
