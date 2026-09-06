@@ -285,6 +285,18 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--b
         </div>
         <button class="add-main-btn" id="saveSettingsBtn">সেটিং সেভ করুন</button>
       </div>
+      <div class="card">
+        <div class="panel-title">🔗 সোশ্যাল মিডিয়া লিংক (ফুটারে দেখাবে)</div>
+        <div class="form-group" style="margin-top: 10px;">
+          <label>Facebook পেজের লিংক</label>
+          <input type="text" id="settingFb" placeholder="https://facebook.com/yourpage">
+        </div>
+        <div class="form-group">
+          <label>YouTube চ্যানেলের লিংক</label>
+          <input type="text" id="settingYt" placeholder="https://youtube.com/@yourchannel">
+        </div>
+        <button class="add-main-btn" id="saveSocialBtn">লিংক সেভ করুন</button>
+      </div>
     </div>
 
     <!-- ===== TAB: Products ===== -->
@@ -414,6 +426,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--b
       <div class="form-group">
         <label>বর্ণনা (Description)</label>
         <textarea id="productDesc" rows="3" placeholder="ছোট বিবরণ... (কাপড়ের ধরন, সাইজ, কালার ইত্যাদি লিখতে পারেন)"></textarea>
+        <small style="display:block; margin-top:4px; color:var(--muted);">✨ কোনো অংশ গাঢ় (বোল্ড) করে হাইলাইট করতে চাইলে সেটির দুই পাশে <b>**</b> দিন। যেমন: <code>**Available Color: Red, Blue**</code> লিখলে ওয়েবসাইটে <b>Available Color: Red, Blue</b> এভাবে বোল্ড দেখাবে।</small>
       </div>
 
       <div class="form-group">
@@ -756,6 +769,22 @@ saveStoreNameBtn.addEventListener('click', async () => {
   if (!name) { showToast('নাম দিন!', 'error'); return; }
   try { await set(ref(db, 'siteSettings/storeName'), name); showToast('দোকানের নাম সেভ হয়েছে!', 'success'); }
   catch (err) { showToast('এরর: ' + err.message, 'error'); }
+});
+
+const settingFb = document.getElementById('settingFb');
+const settingYt = document.getElementById('settingYt');
+const saveSocialBtn = document.getElementById('saveSocialBtn');
+onValue(ref(db, 'siteSettings'), (snap) => {
+  if (!snap.exists()) return;
+  const val = snap.val();
+  if (val.facebook) settingFb.value = val.facebook;
+  if (val.youtube) settingYt.value = val.youtube;
+});
+saveSocialBtn.addEventListener('click', async () => {
+  try {
+    await update(ref(db, 'siteSettings'), { facebook: settingFb.value.trim() || null, youtube: settingYt.value.trim() || null });
+    showToast('সোশ্যাল লিংক সেভ হয়েছে!', 'success');
+  } catch (err) { showToast('এরর: ' + err.message, 'error'); }
 });
 
 /* ===== Product Table Render & CRUD ===== */
