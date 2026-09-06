@@ -291,8 +291,19 @@ h1, h2, h3, .display { font-family: 'Tiro Bangla', 'Hind Siliguri', serif; }
 .product-info h3 { font-family: 'Hind Siliguri'; font-size: 1.08rem; color: var(--ink); margin-bottom: 5px; font-weight: 700; line-height: 1.4; cursor: pointer; }
 
 /* ===== Product Detail Modal ===== */
-.product-detail-img-wrap { width: 100%; height: 320px; background: var(--brand-light); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.product-detail-img-wrap { width: 100%; height: 320px; background: var(--brand-light); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
 .product-detail-img-wrap img { width: 100%; height: 100%; object-fit: contain; }
+.pd-img-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%;
+  border: none; background: rgba(255,255,255,.9); color: var(--ink); font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.15); z-index: 2;
+}
+.pd-img-arrow:hover { background: #fff; }
+.pd-img-prev { left: 10px; }
+.pd-img-next { right: 10px; }
+.pd-img-dots { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 6px; z-index: 2; }
+.pd-img-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.6); border: 1px solid rgba(0,0,0,.15); cursor: pointer; }
+.pd-img-dot.active { background: var(--brand); border-color: var(--brand); }
 .product-detail-body { padding: 24px 26px 26px; }
 .product-detail-body .product-cat { font-size: .75rem; }
 .product-detail-body h2 { font-size: 1.4rem; margin: 4px 0 12px; }
@@ -1118,7 +1129,9 @@ window.openProductModal = (id) => {
   if (!p) return;
   const hasOffer = p.offerPrice && Number(p.offerPrice) < Number(p.price);
   const finalPrice = hasOffer ? p.offerPrice : p.price;
-  const prodImg = p.image && p.image.trim() !== '' ? p.image : DEFAULT_IMAGE;
+  const galleryImages = [p.image, ...(Array.isArray(p.images) ? p.images : [])].filter(u => u && u.trim() !== '');
+  window.__pdImages = galleryImages.length > 0 ? galleryImages : [DEFAULT_IMAGE];
+  window.__pdImageIndex = 0;
   const stock = p.stock === undefined || p.stock === null || p.stock === '' ? null : Number(p.stock);
   const isOut = stock !== null && stock <= 0;
   const isLow = stock !== null && stock > 0 && stock <= 5;
@@ -1126,7 +1139,12 @@ window.openProductModal = (id) => {
 
   document.getElementById('productDetailContent').innerHTML = `
     <div class="product-detail-img-wrap">
-      <img src="${prodImg}" alt="${p.name}" onerror="this.src='${DEFAULT_IMAGE}'">
+      <img id="pdMainImg" src="${window.__pdImages[0]}" alt="${p.name}" onerror="this.src='${DEFAULT_IMAGE}'">
+      ${window.__pdImages.length > 1 ? `
+        <button type="button" class="pd-img-arrow pd-img-prev" onclick="pdChangeImage(-1)">&#10094;</button>
+        <button type="button" class="pd-img-arrow pd-img-next" onclick="pdChangeImage(1)">&#10095;</button>
+        <div class="pd-img-dots">${window.__pdImages.map((_, i) => `<span class="pd-img-dot ${i === 0 ? 'active' : ''}" onclick="pdGoToImage(${i})"></span>`).join('')}</div>
+      ` : ''}
     </div>
     <div class="product-detail-body">
       <h2>${p.name}</h2>
@@ -1150,6 +1168,20 @@ window.openProductModal = (id) => {
 };
 
 window.closeProductModal = () => document.getElementById('productDetailModal').classList.remove('active');
+
+window.pdChangeImage = (delta) => {
+  const imgs = window.__pdImages || [];
+  if (imgs.length < 2) return;
+  window.__pdImageIndex = (window.__pdImageIndex + delta + imgs.length) % imgs.length;
+  pdUpdateImage();
+};
+window.pdGoToImage = (i) => { window.__pdImageIndex = i; pdUpdateImage(); };
+function pdUpdateImage() {
+  const imgs = window.__pdImages || [];
+  const mainImg = document.getElementById('pdMainImg');
+  if (mainImg) mainImg.src = imgs[window.__pdImageIndex];
+  document.querySelectorAll('.pd-img-dot').forEach((d, i) => d.classList.toggle('active', i === window.__pdImageIndex));
+}
 document.getElementById('closeProductDetailModal').addEventListener('click', closeProductModal);
 document.getElementById('productDetailModal').addEventListener('click', e => { if (e.target.id === 'productDetailModal') closeProductModal(); });
 
@@ -1410,6 +1442,10 @@ document.getElementById('waOrderForm').addEventListener('submit', e => {
 </script>
 </body>
 </html>
+
+kichu poriborton lagbe. order somuho theke batil kora order jeno automatic 1 din por bad hoye jay. ar
+admin, order er athe ja i korche, user sudhu pending i dektase ken jani.
+or ta update hoy na. page refresh korle, ken jani singout hoiya jache
 
 
 
