@@ -159,6 +159,11 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--b
 .preview-container img { width: 100%; height: 200px; object-fit: cover; display: block; }
 .remove-btn { position: absolute; top: 8px; right: 8px; background: rgba(214, 48, 74, 0.9); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; line-height: 28px; text-align: center; }
 
+.variant-thumb-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.variant-thumb { position: relative; width: 76px; height: 76px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+.variant-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.variant-thumb .v-remove-btn { position: absolute; top: 2px; right: 2px; background: rgba(214, 48, 74, 0.9); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-weight: bold; font-size: .7rem; line-height: 20px; text-align: center; padding: 0; }
+
 .add-main-btn { background: linear-gradient(135deg, var(--brand), var(--brand-dark)); color: white; border: none; padding: 11px 22px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(11, 110, 79, 0.25); font-family: inherit; }
 .add-main-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(11, 110, 79, 0.35); }
 
@@ -455,6 +460,14 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--b
         <small id="uploadStatusText" style="display:block; margin-top:6px; font-weight:600; text-align:center;"></small>
       </div>
 
+      <div class="form-group">
+        <label>🎨 বাড়তি ছবি (কালার/ভ্যারিয়েন্ট) — চাইলে একাধিক যোগ করা যাবে</label>
+        <div id="variantThumbGrid" class="variant-thumb-grid"></div>
+        <input type="file" id="variantFileInput" accept="image/*" multiple hidden>
+        <button type="button" id="addVariantImgBtn" style="padding:8px 16px; border:1.5px dashed var(--brand); border-radius:10px; background:transparent; color:var(--brand); font-weight:600; cursor:pointer;">➕ ছবি যোগ করুন</button>
+        <small style="display:block; margin-top:6px; color:var(--muted);">যেমন: বিভিন্ন কালারের ছবি। ইউজাররা প্রোডাক্ট পেজে arrow চেপে এই ছবিগুলো দেখতে পারবে।</small>
+      </div>
+
       <div class="form-group" style="display: flex; align-items: center; gap: 10px; background: #FEE2E2; padding: 12px; border-radius: 10px;">
         <input type="checkbox" id="productDisable" style="width: 20px; height: 20px; cursor:pointer;">
         <label for="productDisable" style="margin:0; cursor:pointer; color:#B91C1C; font-size:0.95rem;">🚫 পণ্যটি সাময়িকভাবে ডিজেবল (হাইড) করুন</label>
@@ -551,6 +564,7 @@ let allOrders = {};
 let allCoupons = {};
 let selectedFile = null;
 let currentUploadedUrl = "";
+let variantImages = []; // { file: File|null, url: string|null, previewSrc: string }
 
 /* ===================================================
    ===== Sidebar Navigation =====
@@ -671,6 +685,43 @@ function resetImageSelection() {
   uploadStatusText.textContent = '';
 }
 
+/* ===== Variant (multi-color) images ===== */
+const variantThumbGrid = document.getElementById('variantThumbGrid');
+const variantFileInput = document.getElementById('variantFileInput');
+document.getElementById('addVariantImgBtn').addEventListener('click', () => variantFileInput.click());
+variantFileInput.addEventListener('change', (e) => {
+  Array.from(e.target.files || []).forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      variantImages.push({ file, url: null, previewSrc: ev.target.result });
+      renderVariantThumbs();
+    };
+    reader.readAsDataURL(file);
+  });
+  variantFileInput.value = '';
+});
+
+function renderVariantThumbs() {
+  variantThumbGrid.innerHTML = variantImages.map((v, i) => `
+    <div class="variant-thumb">
+      <img src="${v.previewSrc}" alt="variant ${i + 1}">
+      <button type="button" class="v-remove-btn" data-i="${i}">✕</button>
+    </div>
+  `).join('');
+  variantThumbGrid.querySelectorAll('.v-remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      variantImages.splice(Number(btn.dataset.i), 1);
+      renderVariantThumbs();
+    });
+  });
+}
+
+function resetVariantImages() {
+  variantImages = [];
+  renderVariantThumbs();
+}
+
 /* ===== Modal Control ===== */
 function openModal(isEdit = false) {
   productModal.classList.add('active');
@@ -680,6 +731,7 @@ function openModal(isEdit = false) {
     productForm.reset();
     document.getElementById('editProductId').value = '';
     resetImageSelection();
+    resetVariantImages();
     submitBtn.textContent = 'সেভ করুন';
   }
 }
@@ -800,10 +852,23 @@ productForm.addEventListener('submit', async (e) => {
       finalImageUrl = await uploadToImgBB(processedBlob);
     }
 
+    const pendingVariantUploads = variantImages.filter(v => v.file && !v.url).length;
+    if (pendingVariantUploads > 0) {
+      uploadStatusText.textContent = `⚡ বাড়তি ছবি (${pendingVariantUploads}টি) আপলোড হচ্ছে...`;
+      uploadStatusText.style.color = 'var(--brand)';
+    }
+    for (const v of variantImages) {
+      if (v.file && !v.url) {
+        const blob = await processImage(v.file, 800, 0.8);
+        v.url = await uploadToImgBB(blob);
+      }
+    }
+    const variantUrls = variantImages.map(v => v.url).filter(Boolean);
+
     const productData = {
       name, description, price, category: category || null,
       stock: stock, offerPrice: offerPrice || null, offerTitle: offerTitle || null,
-      image: finalImageUrl || null, disabled: disabled || false
+      image: finalImageUrl || null, images: variantUrls.length > 0 ? variantUrls : null, disabled: disabled || false
     };
 
     if (editId) {
@@ -817,6 +882,7 @@ productForm.addEventListener('submit', async (e) => {
     closeModal();
     productForm.reset();
     resetImageSelection();
+    resetVariantImages();
   } catch (err) {
     console.error(err);
     showToast('এরর: ' + err.message, 'error');
@@ -847,6 +913,12 @@ async function loadProductForEdit(id) {
     imagePreview.src = p.image;
     dropZoneContent.classList.add('hidden');
     previewContainer.classList.remove('hidden');
+  }
+
+  resetVariantImages();
+  if (Array.isArray(p.images)) {
+    variantImages = p.images.filter(Boolean).map(url => ({ file: null, url, previewSrc: url }));
+    renderVariantThumbs();
   }
 
   formTitle.textContent = '✏️ পণ্য এডিট করুন';
