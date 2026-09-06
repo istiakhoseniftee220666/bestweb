@@ -292,7 +292,17 @@ h1, h2, h3, .display { font-family: 'Tiro Bangla', 'Hind Siliguri', serif; }
 
 /* ===== Product Detail Modal ===== */
 .product-detail-img-wrap { width: 100%; height: 320px; background: var(--brand-light); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-.product-detail-img-wrap img { width: 100%; height: 100%; object-fit: contain; }
+.product-detail-img-wrap img { width: 100%; height: 100%; object-fit: contain; cursor: zoom-in; }
+
+.lightbox-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 999; align-items: center; justify-content: center; }
+.lightbox-overlay.active { display: flex; }
+.lightbox-overlay img { max-width: 92vw; max-height: 88vh; object-fit: contain; border-radius: 8px; }
+.lightbox-close { position: absolute; top: 18px; right: 22px; background: rgba(255,255,255,.15); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; }
+.lightbox-close:hover { background: rgba(255,255,255,.28); }
+.lightbox-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,.15); border: none; color: #fff; width: 46px; height: 46px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.lightbox-arrow:hover { background: rgba(255,255,255,.28); }
+.lightbox-prev { left: 18px; }
+.lightbox-next { right: 18px; }
 .pd-img-arrow {
   position: absolute; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%;
   border: none; background: rgba(255,255,255,.9); color: var(--ink); font-size: 1rem; cursor: pointer;
@@ -407,9 +417,24 @@ h1, h2, h3, .display { font-family: 'Tiro Bangla', 'Hind Siliguri', serif; }
 .confetti { position: fixed; width: 10px; height: 10px; pointer-events: none; z-index: 9999; animation: confetti-fall 3s ease-out forwards; }
 @keyframes confetti-fall { 0% { transform: translateY(-100px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
 
-footer { text-align: center; padding: 34px 20px 10px; color: var(--muted); font-size: .88rem; }
-.secret-admin-btn { color: var(--muted); text-decoration: none; font-size: .78rem; margin-top: 8px; display: inline-block; transition: color .3s; }
-.secret-admin-btn:hover { color: var(--brand); }
+footer.site-footer { background: var(--brand-dark); color: #EAF6F0; margin-top: 60px; }
+.footer-top { max-width: 1240px; margin: 0 auto; padding: 48px 6% 30px; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; }
+.footer-col h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 12px; color: #fff; }
+.footer-col h4 { font-size: .95rem; font-weight: 700; margin-bottom: 14px; color: #fff; }
+.footer-col p { font-size: .85rem; line-height: 1.7; color: #C9E4D8; margin-bottom: 14px; }
+.footer-col ul { list-style: none; padding: 0; margin: 0; }
+.footer-col ul li { margin-bottom: 10px; }
+.footer-col ul li a { color: #C9E4D8; text-decoration: none; font-size: .87rem; transition: color .25s; }
+.footer-col ul li a:hover { color: #fff; }
+.footer-social { display: flex; gap: 12px; }
+.footer-social a { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.05rem; transition: background .25s, transform .25s; }
+.footer-social a:hover { background: rgba(255,255,255,.22); transform: translateY(-2px); }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,.12); text-align: center; padding: 16px 20px; font-size: .8rem; color: #A9CFC0; }
+.footer-bottom a.footer-hidden-link { color: inherit; text-decoration: none; opacity: .5; margin-left: 6px; cursor: default; }
+@media (max-width: 780px) {
+  .footer-top { grid-template-columns: 1fr; gap: 26px; text-align: center; }
+  .footer-social { justify-content: center; }
+}
 
 @media (max-width: 780px) {
   .navbar { flex-wrap: wrap; }
@@ -550,7 +575,7 @@ footer { text-align: center; padding: 34px 20px 10px; color: var(--muted); font-
 </section>
 
 <!-- ===== Feedback / Testimonial Section ===== -->
-<section class="feedback-section">
+<section class="feedback-section" id="reviewsSection">
   <div class="section-title-wrap" style="margin-top:0;">
     <h2 class="section-title">গ্রাহকদের মতামত</h2>
   </div>
@@ -597,9 +622,29 @@ footer { text-align: center; padding: 34px 20px 10px; color: var(--muted); font-
   <p id="feedbackEmptyMsg" style="color:var(--muted); text-align:center;">এখনো কোনো মতামত নেই। প্রথম মতামতটি আপনিই দিন!</p>
 </section>
 
-<footer>
-  <p>© 2026 KENDRO. সর্বস্বত্ব সংরক্ষিত।</p>
-  <a href="admin.html" class="secret-admin-btn">🔒 Admin Panel</a>
+<footer class="site-footer">
+  <div class="footer-top">
+    <div class="footer-col">
+      <h3 id="footerStoreName">KENDRO</h3>
+      <p>মানসম্মত পণ্য, বিশ্বস্ত সেবা — আমরা সবসময় আপনার পাশে আছি। সারাদেশে হোম ডেলিভারি ও ক্যাশ অন ডেলিভারি সুবিধা।</p>
+      <div class="footer-social" id="footerSocialRow"></div>
+    </div>
+    <div class="footer-col">
+      <h4>কুইক লিংক</h4>
+      <ul>
+        <li><a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">হোম</a></li>
+        <li><a href="#" onclick="document.getElementById('productsGrid').scrollIntoView({behavior:'smooth'}); return false;">আমাদের পণ্যসমূহ</a></li>
+        <li><a href="#" onclick="document.getElementById('reviewsSection') && document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'}); return false;">গ্রাহক মতামত</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>যোগাযোগ</h4>
+      <p id="footerContactWa">📞 WhatsApp-এ যোগাযোগ করুন</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 <span id="footerCopyName">KENDRO</span>। সর্বস্বত্ব সংরক্ষিত।</span><a href="admin.html" class="footer-hidden-link">·</a>
+  </div>
 </footer>
 
 <!-- ===== Product Detail Modal ===== -->
@@ -608,6 +653,14 @@ footer { text-align: center; padding: 34px 20px 10px; color: var(--muted); font-
     <button class="modal-close-x" id="closeProductDetailModal" style="background:rgba(255,255,255,.9); border-radius:50%; width:34px; height:34px; z-index:5;">✕</button>
     <div id="productDetailContent"></div>
   </div>
+</div>
+
+<!-- ===== Image Zoom Lightbox ===== -->
+<div class="lightbox-overlay" id="imageLightbox">
+  <button type="button" class="lightbox-close" id="lightboxCloseBtn">✕</button>
+  <button type="button" class="lightbox-arrow lightbox-prev" id="lightboxPrevBtn">&#10094;</button>
+  <img id="lightboxImg" src="" alt="zoom">
+  <button type="button" class="lightbox-arrow lightbox-next" id="lightboxNextBtn">&#10095;</button>
 </div>
 
 <!-- ===== Sign-in Modal ===== -->
@@ -666,6 +719,14 @@ const googleProvider = new GoogleAuthProvider();
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1445205170230-053b83016050?w=600&q=80";
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function formatDescription(text) {
+  if (!text) return '';
+  return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+}
 const DEFAULT_SLIDES = [
   { image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=1400&q=80", title: "নতুন কালেকশন এসে গেছে", eyebrow: "নতুন" },
   { image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1400&q=80", title: "সেরা দামে সেরা পণ্য", eyebrow: "অফার" },
@@ -1017,13 +1078,22 @@ onValue(ref(db, 'feedback'), snap => { renderFeedbackList(snap.exists() ? snap.v
 
 /* ===== Site Settings ===== */
 onValue(ref(db, 'siteSettings'), snap => {
-  if (snap.exists()) {
-    const val = snap.val();
-    if (val.whatsapp) { ownerWhatsApp = formatBDPhoneNumber(val.whatsapp); }
-    if (val.storeName) {
-      document.title = val.storeName + " — অনলাইন শপ";
-    }
+  const val = snap.exists() ? snap.val() : {};
+  if (val.whatsapp) { ownerWhatsApp = formatBDPhoneNumber(val.whatsapp); }
+  if (val.storeName) {
+    document.title = val.storeName + " — অনলাইন শপ";
+    document.getElementById('footerStoreName').textContent = val.storeName;
+    document.getElementById('footerCopyName').textContent = val.storeName;
   }
+  if (val.whatsapp) {
+    const waDigits = formatBDPhoneNumber(val.whatsapp);
+    document.getElementById('footerContactWa').innerHTML = `📞 WhatsApp: <a href="https://wa.me/${waDigits}" target="_blank" style="color:#C9E4D8;">${val.whatsapp}</a>`;
+  }
+  const socialRow = document.getElementById('footerSocialRow');
+  let socialHtml = '';
+  if (val.facebook) socialHtml += `<a href="${val.facebook}" target="_blank" rel="noopener" title="Facebook">📘</a>`;
+  if (val.youtube) socialHtml += `<a href="${val.youtube}" target="_blank" rel="noopener" title="YouTube">▶️</a>`;
+  socialRow.innerHTML = socialHtml;
 });
 
 /* ===== Hero Slider ===== */
@@ -1104,7 +1174,7 @@ function renderProducts() {
       </div>
       <div class="product-info">
         <h3 onclick="openProductModal('${id}')">${p.name}</h3>
-        <p>${p.description || 'মানসম্মত পণ্য — বিশ্বস্ততার সাথে সরবরাহকৃত।'}</p>
+        <p>${p.description ? formatDescription(p.description) : 'মানসম্মত পণ্য — বিশ্বস্ততার সাথে সরবরাহকৃত।'}</p>
         <div class="price-tag-row">
           <span class="price-tag num">৳ ${finalPrice}</span>
           ${hasOffer ? `<span class="old-price">৳ ${p.price}</span>` : ''}
@@ -1139,7 +1209,7 @@ window.openProductModal = (id) => {
 
   document.getElementById('productDetailContent').innerHTML = `
     <div class="product-detail-img-wrap">
-      <img id="pdMainImg" src="${window.__pdImages[0]}" alt="${p.name}" onerror="this.src='${DEFAULT_IMAGE}'">
+      <img id="pdMainImg" src="${window.__pdImages[0]}" alt="${p.name}" onerror="this.src='${DEFAULT_IMAGE}'" onclick="openImageLightbox()">
       ${window.__pdImages.length > 1 ? `
         <button type="button" class="pd-img-arrow pd-img-prev" onclick="pdChangeImage(-1)">&#10094;</button>
         <button type="button" class="pd-img-arrow pd-img-next" onclick="pdChangeImage(1)">&#10095;</button>
@@ -1149,7 +1219,7 @@ window.openProductModal = (id) => {
     <div class="product-detail-body">
       <h2>${p.name}</h2>
       ${isOut ? `<div class="stock-badge out" style="position:static; display:inline-block; margin-bottom:12px;">স্টক নেই</div>` : (isLow ? `<div class="stock-badge low" style="position:static; display:inline-block; margin-bottom:12px;">মাত্র ${stock}টি বাকি</div>` : '')}
-      <p class="pd-desc">${p.description || 'মানসম্মত পণ্য — বিশ্বস্ততার সাথে সরবরাহকৃত।'}</p>
+      <p class="pd-desc">${p.description ? formatDescription(p.description) : 'মানসম্মত পণ্য — বিশ্বস্ততার সাথে সরবরাহকৃত।'}</p>
       <div class="price-tag-row">
         <span class="price-tag num">৳ ${finalPrice}</span>
         ${hasOffer ? `<span class="old-price">৳ ${p.price}</span>` : ''}
@@ -1182,6 +1252,21 @@ function pdUpdateImage() {
   if (mainImg) mainImg.src = imgs[window.__pdImageIndex];
   document.querySelectorAll('.pd-img-dot').forEach((d, i) => d.classList.toggle('active', i === window.__pdImageIndex));
 }
+
+window.openImageLightbox = () => {
+  const imgs = window.__pdImages || [];
+  if (imgs.length === 0) return;
+  document.getElementById('lightboxImg').src = imgs[window.__pdImageIndex];
+  document.getElementById('imageLightbox').classList.add('active');
+  const showArrows = imgs.length > 1 ? 'flex' : 'none';
+  document.getElementById('lightboxPrevBtn').style.display = showArrows;
+  document.getElementById('lightboxNextBtn').style.display = showArrows;
+};
+function closeLightbox() { document.getElementById('imageLightbox').classList.remove('active'); }
+document.getElementById('lightboxCloseBtn').addEventListener('click', closeLightbox);
+document.getElementById('imageLightbox').addEventListener('click', e => { if (e.target.id === 'imageLightbox') closeLightbox(); });
+document.getElementById('lightboxPrevBtn').addEventListener('click', () => { pdChangeImage(-1); document.getElementById('lightboxImg').src = window.__pdImages[window.__pdImageIndex]; });
+document.getElementById('lightboxNextBtn').addEventListener('click', () => { pdChangeImage(1); document.getElementById('lightboxImg').src = window.__pdImages[window.__pdImageIndex]; });
 document.getElementById('closeProductDetailModal').addEventListener('click', closeProductModal);
 document.getElementById('productDetailModal').addEventListener('click', e => { if (e.target.id === 'productDetailModal') closeProductModal(); });
 
@@ -1442,6 +1527,8 @@ document.getElementById('waOrderForm').addEventListener('submit', e => {
 </script>
 </body>
 </html>
+
+
 
 
 
